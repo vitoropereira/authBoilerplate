@@ -1,13 +1,13 @@
 import { compare } from "bcrypt";
-import { prisma } from "../../../../../src/lib/prisma";
-import { clearDB, webserverUrl } from "../../../../orchestrator";
+import { prisma } from "src/lib/prisma";
+import { clearDB, webserverUrl } from "../../../orchestrator";
 
 clearDB();
 
-describe("POST /api/v1/users/create-users", () => {
+describe("POST /api/v1/users/", () => {
   describe("Anonymous user", () => {
     test("With unique and valid data", async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -18,25 +18,24 @@ describe("POST /api/v1/users/create-users", () => {
           password: "validpassword",
         }),
       });
-
       const responseBody = await response.json();
 
       expect(response.status).toEqual(201);
 
       expect(responseBody.user).toEqual({
-        id: responseBody.user["id"],
+        id: responseBody.user.id,
         username: "uniqueUserName",
-        email: "validemailcaps@gmail.com",
-        createdAt: responseBody.user["createdAt"],
-        updatedAt: responseBody.user["updatedAt"],
+        features: ["read:activation_token"],
+        created_at: responseBody.user.created_at,
+        updated_at: responseBody.user.updated_at,
       });
 
-      expect(Date.parse(responseBody.user["createdAt"])).not.toEqual(NaN);
-      expect(Date.parse(responseBody.user["updatedAt"])).not.toEqual(NaN);
+      expect(Date.parse(responseBody.user.created_at)).not.toEqual(NaN);
+      expect(Date.parse(responseBody.user.updated_at)).not.toEqual(NaN);
     });
 
     test("With unique and valid data, and an unknown key", async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -54,17 +53,17 @@ describe("POST /api/v1/users/create-users", () => {
       expect(response.status).toEqual(201);
 
       expect(responseBody.user).toEqual({
-        id: responseBody.user["id"],
+        id: responseBody.user.id,
         username: "postWithUnknownKey",
-        email: "postwithunknownkey@gmail.com",
-        createdAt: responseBody.user["createdAt"],
-        updatedAt: responseBody.user["updatedAt"],
+        features: ["read:activation_token"],
+        created_at: responseBody.user.created_at,
+        updated_at: responseBody.user.updated_at,
       });
 
-      expect(Date.parse(responseBody.user["createdAt"])).not.toEqual(NaN);
-      expect(Date.parse(responseBody.user["updatedAt"])).not.toEqual(NaN);
+      expect(Date.parse(responseBody.user["created_at"])).not.toEqual(NaN);
+      expect(Date.parse(responseBody.user["updated_at"])).not.toEqual(NaN);
 
-      const userInDatabase = await prisma.users.findFirst({
+      const userInDatabase = await prisma.user.findFirst({
         where: {
           id: responseBody.user["id"],
         },
@@ -76,7 +75,7 @@ describe("POST /api/v1/users/create-users", () => {
     });
 
     test("With unique and valid data, but with 'untrimmed' values", async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -93,36 +92,36 @@ describe("POST /api/v1/users/create-users", () => {
       expect(response.status).toEqual(201);
 
       expect(responseBody.user).toEqual({
-        id: responseBody.user["id"],
+        id: responseBody.user.id,
         username: "extraSpaceInTheEnd",
-        email: "space.in.the.beggining@gmail.com",
-        createdAt: responseBody.user["createdAt"],
-        updatedAt: responseBody.user["updatedAt"],
+        features: ["read:activation_token"],
+        created_at: responseBody.user.created_at,
+        updated_at: responseBody.user.updated_at,
       });
 
-      expect(Date.parse(responseBody.user["createdAt"])).not.toEqual(NaN);
-      expect(Date.parse(responseBody.user["updatedAt"])).not.toEqual(NaN);
+      expect(Date.parse(responseBody.user.created_at)).not.toEqual(NaN);
+      expect(Date.parse(responseBody.user.updated_at)).not.toEqual(NaN);
 
-      const userInDatabase = await prisma.users.findFirst({
+      const userInDatabase = await prisma.user.findFirst({
         where: {
-          id: responseBody.user["id"],
+          id: responseBody.user.id,
         },
       });
 
       if (userInDatabase) {
         const passwordsMatch = await compare(
           "validpassword",
-          userInDatabase["password"]
+          userInDatabase.password
         );
         expect(passwordsMatch).toBe(true);
-        expect(userInDatabase["email"]).toEqual(
+        expect(userInDatabase.email).toEqual(
           "space.in.the.beggining@gmail.com"
         );
       }
     });
 
     test('With "username" missing', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -132,24 +131,23 @@ describe("POST /api/v1/users/create-users", () => {
           password: "validpassword123",
         }),
       });
-
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "O 'username' é obrigatório."
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual(
+        '"username" é um campo obrigatório.'
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
-        "Escolha um 'username' e tente novamente!"
+      expect(responseBody.action).toEqual(
+        "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:USERNAME_REQUIRE"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "username" with a null value', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -164,20 +162,20 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "O 'username' é obrigatório."
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual(
+        '"username" possui o valor inválido "null".'
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
-        "Escolha um 'username' e tente novamente!"
+      expect(responseBody.action).toEqual(
+        "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:USERNAME_REQUIRE"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "username" with an empty string', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -192,20 +190,20 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "O 'username' é obrigatório."
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual(
+        '"username" não pode estar em branco.'
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
-        "Escolha um 'username' e tente novamente!"
+      expect(responseBody.action).toEqual(
+        "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:USERNAME_REQUIRE"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "username" that\'s not a String', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -220,20 +218,20 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "O 'username' é obrigatório."
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual(
+        '"username" deve ser do tipo String.'
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
-        "Escolha um 'username' e tente novamente!"
+      expect(responseBody.action).toEqual(
+        "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:USERNAME_REQUIRE"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "username" containing non alphanumeric characters', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -248,20 +246,20 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "O 'username' é obrigatório."
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual(
+        '"username" deve conter apenas caracteres alfanuméricos.'
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
-        "Escolha um 'username' e tente novamente!"
+      expect(responseBody.action).toEqual(
+        "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:USERNAME_REQUIRE"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "username" too long', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -276,20 +274,20 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "O 'username' é obrigatório."
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual(
+        '"username" deve conter no máximo 30 caracteres.'
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
-        "Escolha um 'username' e tente novamente!"
+      expect(responseBody.action).toEqual(
+        "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:USERNAME_REQUIRE"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "username" in blocked list', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -304,20 +302,20 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual(
         "Este nome de usuário não está disponível para uso."
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
+      expect(responseBody.action).toEqual(
         "Escolha outro nome de usuário e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:CHECK_BLOCKED_USERNAMES:BLOCKED_USERNAME"
+      expect(responseBody.errorLocationCode).toEqual(
+        "UTILS_USER:CHECK_BLOCKED_USERNAMES:BLOCKED_USERNAME"
       );
     });
 
     test('With "email" duplicated (same uppercase letters)', async () => {
-      await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -329,38 +327,35 @@ describe("POST /api/v1/users/create-users", () => {
         }),
       });
 
-      const secondResponse = await fetch(
-        `${webserverUrl}/api/v1/users/create-user`,
-        {
-          method: "post",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: "anotherUserName222",
-            email: "email.will.be.duplicated@gmail.com",
-            password: "validpassword",
-          }),
-        }
-      );
+      const secondResponse = await fetch(`${webserverUrl}/api/v1/users/`, {
+        method: "post",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: "anotherUserName222",
+          email: "email.will.be.duplicated@gmail.com",
+          password: "validpassword",
+        }),
+      });
 
       const secondResponseBody = await secondResponse.json();
 
       expect(secondResponse.status).toEqual(400);
-      expect(secondResponseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(secondResponseBody.errorResponse["message"]).toEqual(
+      expect(secondResponseBody.statusCode).toEqual(400);
+      expect(secondResponseBody.message).toEqual(
         "O email informado já está sendo usado."
       );
-      expect(secondResponseBody.errorResponse["action"]).toEqual(
+      expect(secondResponseBody.action).toEqual(
         "Ajuste os dados enviados e tente novamente."
       );
-      expect(secondResponseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:DUPLICATE_EMAIL"
+      expect(secondResponseBody.errorLocationCode).toEqual(
+        "MODEL:USER:VALIDATE_UNIQUE_EMAIL:ALREADY_EXISTS"
       );
     });
 
     test('With "email" duplicated (different uppercase letters)', async () => {
-      await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -372,38 +367,35 @@ describe("POST /api/v1/users/create-users", () => {
         }),
       });
 
-      const secondResponse = await fetch(
-        `${webserverUrl}/api/v1/users/create-user`,
-        {
-          method: "post",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: "anotherUserName22",
-            email: "caps@gmail.com",
-            password: "validpassword",
-          }),
-        }
-      );
+      const secondResponse = await fetch(`${webserverUrl}/api/v1/users/`, {
+        method: "post",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: "anotherUserName22",
+          email: "caps@gmail.com",
+          password: "validpassword",
+        }),
+      });
 
       const secondResponseBody = await secondResponse.json();
 
       expect(secondResponse.status).toEqual(400);
-      expect(secondResponseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(secondResponseBody.errorResponse["message"]).toEqual(
+      expect(secondResponseBody.statusCode).toEqual(400);
+      expect(secondResponseBody.message).toEqual(
         "O email informado já está sendo usado."
       );
-      expect(secondResponseBody.errorResponse["action"]).toEqual(
+      expect(secondResponseBody.action).toEqual(
         "Ajuste os dados enviados e tente novamente."
       );
-      expect(secondResponseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:DUPLICATE_EMAIL"
+      expect(secondResponseBody.errorLocationCode).toEqual(
+        "MODEL:USER:VALIDATE_UNIQUE_EMAIL:ALREADY_EXISTS"
       );
     });
 
     test('With "email" missing', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -417,20 +409,18 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "O 'email' é obrigatório."
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual('"email" é um campo obrigatório.');
+      expect(responseBody.action).toEqual(
+        "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
-        "Escolha um 'email' e tente novamente!"
-      );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:EMAIL_REQUIRE"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "email" with an empty string', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -445,20 +435,18 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "O 'email' deve conter um email válido."
-      );
-      expect(responseBody.errorResponse["action"]).toEqual(
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual('"email" não pode estar em branco.');
+      expect(responseBody.action).toEqual(
         "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:EMAIL_VALID"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "email" that\'s not a String', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -473,20 +461,18 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "O 'email' deve ser do tipo String."
-      );
-      expect(responseBody.errorResponse["action"]).toEqual(
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual('"email" deve ser do tipo String.');
+      expect(responseBody.action).toEqual(
         "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:EMAIL_STRING"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "email" with invalid format', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -501,20 +487,20 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "O 'email' deve conter um email válido."
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual(
+        '"email" deve conter um email válido.'
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
+      expect(responseBody.action).toEqual(
         "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:EMAIL_VALID"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "password" missing', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -528,20 +514,20 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "O 'password' é um campo obrigatório."
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual(
+        '"password" é um campo obrigatório.'
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
+      expect(responseBody.action).toEqual(
         "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:PASSWORD_REQUIRE"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "password" with an empty string', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -556,20 +542,20 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "O 'password' deve conter no mínimo 8 caracteres."
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual(
+        '"password" não pode estar em branco.'
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
+      expect(responseBody.action).toEqual(
         "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:PASSWORD_CARACTERES"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "password" that\'s not a String', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -584,20 +570,20 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "O 'password' deve ser do tipo String."
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual(
+        '"password" deve ser do tipo String.'
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
+      expect(responseBody.action).toEqual(
         "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:PASSWORD_STRING"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "password" too short', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -612,20 +598,20 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "O 'password' deve conter no mínimo 8 caracteres."
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual(
+        '"password" deve conter no mínimo 8 caracteres.'
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
+      expect(responseBody.action).toEqual(
         "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:PASSWORD_CARACTERES"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "password" too long', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",
@@ -641,40 +627,40 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "O 'password' deve conter no máximo 72 caracteres."
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual(
+        '"password" deve conter no máximo 72 caracteres.'
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
+      expect(responseBody.action).toEqual(
         "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:PASSWORD_CARACTERES"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "body" totally blank', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
       });
 
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "Os dados são obrigatórios."
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual(
+        "Body enviado deve ser do tipo Object."
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
-        "Você deve preencher todos os campos."
+      expect(responseBody.action).toEqual(
+        "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:BODY_REQUIRE"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
 
     test('With "body" containing a String', async () => {
-      const response = await fetch(`${webserverUrl}/api/v1/users/create-user`, {
+      const response = await fetch(`${webserverUrl}/api/v1/users/`, {
         method: "post",
         body: "Please don't hack us, we are the good guys!",
       });
@@ -682,15 +668,15 @@ describe("POST /api/v1/users/create-users", () => {
       const responseBody = await response.json();
 
       expect(response.status).toEqual(400);
-      expect(responseBody.errorResponse["statusCode"]).toEqual(400);
-      expect(responseBody.errorResponse["message"]).toEqual(
-        "Os dados são obrigatórios."
+      expect(responseBody.statusCode).toEqual(400);
+      expect(responseBody.message).toEqual(
+        "Body enviado deve ser do tipo Object."
       );
-      expect(responseBody.errorResponse["action"]).toEqual(
-        "Você deve preencher todos os campos."
+      expect(responseBody.action).toEqual(
+        "Ajuste os dados enviados e tente novamente."
       );
-      expect(responseBody.errorResponse["errorLocationCode"]).toEqual(
-        "CREATE_USER:VALIDATOR:BODY_REQUIRE"
+      expect(responseBody.errorLocationCode).toEqual(
+        "MODEL:VALIDATOR:FINAL_SCHEMA"
       );
     });
   });

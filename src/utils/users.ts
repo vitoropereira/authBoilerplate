@@ -1,4 +1,10 @@
-import { ValidationError } from ".";
+import { ValidationError } from "errors";
+
+function createAnonymous() {
+  return {
+    features: ["read:activation_token", "create:session", "create:user"],
+  };
+}
 
 export function checkBlockedUsernames(username: string) {
   const blockedUsernames = [
@@ -170,10 +176,15 @@ export function checkBlockedUsernames(username: string) {
   ];
 
   if (blockedUsernames.includes(username.toLowerCase())) {
-    return ValidationError({
+    throw new ValidationError({
       message: `Este nome de usuário não está disponível para uso.`,
       action: "Escolha outro nome de usuário e tente novamente.",
-      errorLocationCode: "CREATE_USER:CHECK_BLOCKED_USERNAMES:BLOCKED_USERNAME",
+      errorLocationCode: "UTILS_USER:CHECK_BLOCKED_USERNAMES:BLOCKED_USERNAME",
     });
   }
 }
+
+export default Object.freeze({
+  createAnonymous,
+  checkBlockedUsernames,
+});

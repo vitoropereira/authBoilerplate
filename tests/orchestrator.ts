@@ -11,7 +11,7 @@ export const webserverUrl = `http://${process.env.WEBSERVER_HOST}:${process.env.
 
 export function clearDB() {
   afterAll(async () => {
-    const deleteUsers = prisma.users.deleteMany();
+    const deleteUsers = prisma.user.deleteMany();
 
     await prisma.$transaction([deleteUsers]);
 

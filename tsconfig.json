@@ -2,7 +2,7 @@
   "compilerOptions": {
     "sourceMap": true,
     "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": ["es2017", "dom", "esnext", "es6", ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -16,6 +16,7 @@
     "jsx": "preserve",
     "incremental": true,
     "outDir": "dist",
+    "baseUrl": ".", 
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "jest.config.js"],
   "exclude": ["node_modules"]
