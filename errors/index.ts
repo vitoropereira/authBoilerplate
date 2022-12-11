@@ -201,3 +201,25 @@ export class ValidationError extends BaseError {
     });
   }
 }
+
+export class ServiceError extends BaseError {
+  constructor({
+    message,
+    action,
+    stack,
+    context,
+    statusCode,
+    errorLocationCode,
+    databaseErrorCode,
+  }: BaseErrorProps) {
+    super({
+      message: message || "Serviço indisponível no momento.",
+      action: action || "Verifique se o serviço está disponível.",
+      stack: stack,
+      statusCode: statusCode || 503,
+      context: context,
+      errorLocationCode: errorLocationCode,
+      databaseErrorCode: databaseErrorCode,
+    });
+  }
+}

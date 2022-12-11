@@ -1,6 +1,6 @@
 import { compare } from "bcrypt";
 import { prisma } from "src/lib/prisma";
-import { clearDB, webserverUrl } from "../../../orchestrator";
+import { clearDB, webserverUrl } from "src/tests/orchestrator";
 
 clearDB();
 

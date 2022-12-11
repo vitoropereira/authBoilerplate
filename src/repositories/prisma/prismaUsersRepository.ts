@@ -17,9 +17,56 @@ export class PrismaUsersRepository implements UsersRepository {
     return user;
   }
 
+  async findUserByUserId(userId: string) {
+    const user = await prisma.user.findFirst({ where: { id: userId } });
+    return user;
+  }
+
   async findUserByEmail(email: string) {
     const user = await prisma.user.findFirst({ where: { email } });
 
     return user;
+  }
+
+  async removeFeatures(userId: string, features: string[]) {
+    const response = await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        features,
+      },
+    });
+
+    console.log(
+      "----------- response --------------------- removeFeatures -----------"
+    );
+    console.log(response);
+    if (response) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  async addFeatures(userId: string, features: string[]) {
+    const response = await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        features: [],
+      },
+    });
+
+    console.log(
+      "----------- response --------------------- addFeatures -----------"
+    );
+    console.log(response);
+    if (response) {
+      return true;
+    } else {
+      return false;
+    }
   }
 }

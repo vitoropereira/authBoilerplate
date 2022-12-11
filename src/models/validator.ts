@@ -18,6 +18,7 @@ interface ValidatorProps {
     expires_at?: string;
     created_at?: string;
     updated_at?: string;
+    token_id?: string;
   };
 }
 

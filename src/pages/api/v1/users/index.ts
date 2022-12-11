@@ -2,12 +2,15 @@ import nextConnect from "next-connect";
 
 import { NextApiRequest, NextApiResponse } from "next";
 import { CreateUser } from "src/models/user";
-import { PrismaUsersRepository } from "src/repositories/prisma/prismaUsersRepository";
 import validator from "src/models/validator";
 import authorization from "src/models/authorization";
 import controller, { RequestProps } from "src/models/controller";
 import { User } from "@prisma/client";
 import authentication from "src/models/authentication";
+import { ActivationUser } from "src/models/activation";
+import { PrismaUsersRepository } from "src/repositories/prisma/prismaUsersRepository";
+import { PrismaActivationRepository } from "src/repositories/prisma/prismaActivationRepository";
+import { NodemailerMailRepository } from "src/repositories/nodemailer/nodemailerMailRepository";
 
 export default nextConnect({
   attachParams: true,
@@ -24,11 +27,20 @@ export default nextConnect({
 
 async function postHandler(request: RequestProps, response: NextApiResponse) {
   const prismaUsersRepository = new PrismaUsersRepository();
+  const prismaActivateRepository = new PrismaActivationRepository();
+  const emailRepository = new NodemailerMailRepository();
+
   const createUser = new CreateUser(prismaUsersRepository);
 
   const newUser = await createUser.create(request.body);
 
-  // await activation.createAndSendActivationEmail(newUser);
+  const activateUser = new ActivationUser(
+    prismaActivateRepository,
+    prismaUsersRepository,
+    emailRepository
+  );
+
+  await activateUser.createAndSendActivationEmail(newUser);
 
   const secureOutputValues: User = authorization.filterOutput(
     newUser,
