@@ -15,11 +15,12 @@ interface SendEmailProps {
 }
 
 const transporter = nodemailer.createTransport({
-  service: "smtp-relay.sendinblue.com",
-  port: 587,
+  host: "localhost",
+  port: 1080,
+  secure: false,
   auth: {
-    user: "vop1234@hotmail.com",
-    pass: "adfadsfadsfadsf",
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
   },
 });
 
