@@ -1,7 +1,7 @@
 version: '2.4'
 services:
   postgres_dev:
-    container_name: 'postgres-dev'
+    container_name: 'postgres-auth'
     image: 'postgres:14.1-alpine'
     env_file:
       - .env
@@ -11,7 +11,7 @@ services:
       - postgres_data:/data/postgres
     restart: unless-stopped
   mailcatcher:
-    container_name: mailcatcher-dev
+    container_name: mailcatcher-auth
     image: sj26/mailcatcher
     expose:
       - 1025

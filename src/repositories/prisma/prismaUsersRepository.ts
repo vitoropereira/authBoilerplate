@@ -13,7 +13,18 @@ export class PrismaUsersRepository implements UsersRepository {
   }
 
   async findUserByUsername(username: string) {
-    const user = await prisma.user.findFirst({ where: { username } });
+    console.log("username");
+    console.log(username);
+    const user = await prisma.user.findFirst({
+      where: {
+        username,
+      },
+    });
+    console.log("user -----------------");
+    console.log(user);
+
+    prisma.$disconnect();
+
     return user;
   }
 

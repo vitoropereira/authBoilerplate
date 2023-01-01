@@ -17,7 +17,20 @@ export class CreateUser {
   async create(request: UserCreateData) {
     const validateUserData = validatePostSchema(request);
     checkBlockedUsernames(validateUserData.username);
-    await this.validateUniqueUsername(validateUserData.username);
+    console.log("validateUserData 2");
+    console.log(validateUserData);
+    const existUser = await this.usersRepository.findUserByUsername(
+      validateUserData.username
+    );
+
+    if (existUser) {
+      throw new ValidationError({
+        message: `O "username" informado já está sendo usado.`,
+        errorLocationCode: "MODEL:USER:VALIDATE_UNIQUE_USERNAME:ALREADY_EXISTS",
+        key: "username",
+      });
+    }
+
     await this.validateUniqueEmail(validateUserData.email);
     validateUserData.password = await this.hashPassword(
       validateUserData.password
@@ -28,17 +41,6 @@ export class CreateUser {
     const user = await this.usersRepository.create(validateUserData);
 
     return user;
-  }
-
-  async validateUniqueUsername(username: string) {
-    const existUser = await this.usersRepository.findUserByUsername(username);
-    if (existUser) {
-      throw new ValidationError({
-        message: `O "username" informado já está sendo usado.`,
-        errorLocationCode: "MODEL:USER:VALIDATE_UNIQUE_USERNAME:ALREADY_EXISTS",
-        key: "username",
-      });
-    }
   }
 
   async validateUniqueEmail(email: string) {
@@ -64,10 +66,12 @@ function validatePostSchema(postedUserData: UserCreateData): UserCreateData {
     email: "required",
     password: "required",
   };
+
   const userDataValidator = {
     object: postedUserData,
     keys,
   };
+
   const cleanValues = validator(userDataValidator);
 
   return cleanValues;

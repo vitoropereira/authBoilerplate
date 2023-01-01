@@ -4,11 +4,12 @@ import { clearDB, webserverUrl } from "src/tests/orchestrator";
 
 clearDB();
 
+
 describe("POST /api/v1/users/", () => {
   describe("Anonymous user", () => {
     test("With unique and valid data", async () => {
       const response = await fetch(`${webserverUrl}/api/v1/users`, {
-        method: "post",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -18,8 +19,8 @@ describe("POST /api/v1/users/", () => {
           password: "validpassword",
         }),
       });
-      const responseBody = await response.json();
 
+      const responseBody = await response.json();
       expect(response.status).toEqual(201);
 
       expect(responseBody.user).toEqual({

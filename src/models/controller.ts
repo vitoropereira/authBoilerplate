@@ -25,6 +25,7 @@ async function onNoMatchHandler(
   request: RequestProps,
   response: NextApiResponse
 ) {
+  console.log("onNoMatchHandler ------------->");
   const errorObject = new NotFoundError({
     requestId: request.context?.requestId || uuidV4(),
   });
